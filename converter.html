@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloxd Model Converter | Bloxd Tools for Bloxd Japan Wiki</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Model Viewer -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <link rel="stylesheet" href="css/converter.css">
+    <style>
+        #error-log {
+            color: #ff6b6b;
+            font-size: 12px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        #error-log.visible {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <header class="header">
+            <h1>Bloxd Model Converter</h1>
+            <p class="subtitle">Bloxd Tools for <a href="https://bloxdjapan.miraheze.org/">Bloxd Japan Wiki</a></p>
+            <p>GitHub (Bloxdy/texture-packs) からモデルを選択してPNG保存できます。</p>
+            <nav class="nav-links">
+                <a href="viewer.html" class="nav-link">➔ Texture Viewer</a>
+                <button id="theme-toggle" class="theme-toggle" title="テーマ切り替え">🌙</button>
+            </nav>
+
+            <div class="search-container">
+                <div class="custom-select-wrapper">
+                    <input type="text" id="model-search" placeholder="モデルを検索または選択..." autocomplete="off">
+                    <button type="button" class="clear-btn hidden" id="clear-model-search" title="クリア">×</button>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+                <div id="loading-indicator" class="loading hidden">モデルを読み込み中...</div>
+
+                <!-- Custom Dropdown List -->
+                <ul id="custom-model-list" class="custom-options hidden">
+                    <!-- Options will be populated by JS -->
+                </ul>
+            </div>
+        </header>
+
+        <main class="viewer-container">
+            <model-viewer id="viewer" shadow-intensity="1" environment-image="neutral" interaction-prompt="none"
+                min-camera-orbit="auto auto 5%" max-camera-orbit="auto auto 100%" alt="Select a model to view">
+            </model-viewer>
+
+            <div class="controls" id="controls">
+                <div class="control-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="camera-toggle"> 回転を許可
+                    </label>
+                </div>
+
+                <div class="camera-actions">
+                    <button class="btn secondary" id="reset-btn" title="デフォルト視点">リセット</button>
+                    <button class="btn secondary" id="cam-fr-btn" title="右前からの視点">↖️</button>
+                    <button class="btn secondary" id="cam-fl-btn" title="左前からの視点">↗️</button>
+                    <button class="btn secondary" id="cam-br-btn" title="右奥からの視点">↙️</button>
+                    <button class="btn secondary" id="cam-bl-btn" title="左奥からの視点">↘️</button>
+                </div>
+                <button class="btn primary" id="save-btn">PNG保存</button>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Powered by model-viewer • Raw Data from GitHub (Bloxdy/texture-packs)</p>
+            <p>Made by tomoru1741</p>
+        </footer>
+    </div>
+
+    <script src="js/converter.js"></script>
+</body>
+
+</html>

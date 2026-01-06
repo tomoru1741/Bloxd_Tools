@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloxd Texture Viewer | Bloxd Tools for Bloxd Japan Wiki</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/viewer.css">
+    <script src="js/viewer.js" defer></script>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <header class="header">
+            <h1>Bloxd Texture Viewer</h1>
+            <p class="subtitle">Bloxd Tools for <a href="https://bloxdjapan.miraheze.org/">Bloxd Japan Wiki</a></p>
+            <p>GitHub (Bloxdy/texture-packs) からテクスチャを選択して表示します。</p>
+            <nav class="nav-links">
+                <a href="converter.html" class="nav-link">➔ Model Converter</a>
+                <button id="theme-toggle" class="theme-toggle" title="テーマ切り替え">🌙</button>
+            </nav>
+
+            <div class="controls-container">
+                <div class="toggles">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="half-block-toggle"> ハーフブロック
+                    </label>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="all-faces-same-toggle"> 全面同じテクスチャ
+                    </label>
+                </div>
+
+                <div class="inputs-grid">
+                    <!-- Top Texture -->
+                    <div class="input-group">
+                        <label id="top-label">上面</label>
+                        <div class="custom-select-wrapper search-container">
+                            <input type="text" id="texture-search-top" placeholder="上面のテクスチャ..." autocomplete="off">
+                            <button type="button" class="clear-btn hidden" id="clear-texture-top" title="クリア">×</button>
+                            <span class="dropdown-arrow">▼</span>
+                            <ul id="list-top" class="custom-options hidden"></ul>
+                        </div>
+                    </div>
+
+                    <!-- Side Left Texture -->
+                    <div class="input-group side-input">
+                        <label>左側面</label>
+                        <div class="custom-select-wrapper search-container">
+                            <input type="text" id="texture-search-side-l" placeholder="左側面のテクスチャ..." autocomplete="off">
+                            <button type="button" class="clear-btn hidden" id="clear-texture-side-l"
+                                title="クリア">×</button>
+                            <span class="dropdown-arrow">▼</span>
+                            <ul id="list-side-l" class="custom-options hidden"></ul>
+                        </div>
+                    </div>
+
+                    <!-- Side Right Texture -->
+                    <div class="input-group side-input">
+                        <label>右側面</label>
+                        <div class="custom-select-wrapper search-container">
+                            <input type="text" id="texture-search-side-r" placeholder="右側面のテクスチャ..." autocomplete="off">
+                            <button type="button" class="clear-btn hidden" id="clear-texture-side-r"
+                                title="クリア">×</button>
+                            <span class="dropdown-arrow">▼</span>
+                            <ul id="list-side-r" class="custom-options hidden"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="loading-indicator" class="loading hidden">テクスチャを読み込み中...</div>
+            </div>
+        </header>
+
+        <main class="viewer-container">
+            <!-- Modified IsoScene for better centering within container -->
+            <div class="BlockRoot">
+                <div class="IsoScene">
+                    <div class="Cube">
+                        <div class="Face top"></div>
+                        <div class="Face left"></div>
+                        <div class="Face right"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Raw Data from GitHub (Bloxdy/texture-packs)</p>
+            <p>Made by tomoru1741</p>
+        </footer>
+    </div>
+
+</body>
+
+</html>
