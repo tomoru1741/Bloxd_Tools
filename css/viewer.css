@@ -1,0 +1,460 @@
+:root {
+  /* Dark theme (default) */
+  --bg-color: #0f1115;
+  --surface-color: #1a1d24;
+  --primary-color: #3b82f6;
+  --primary-hover: #2563eb;
+  --text-color: #ffffff;
+  --text-secondary: #9ca3af;
+  --border-radius: 12px;
+  --spacing: 24px;
+
+  /* Cube Variables */
+  --size: 185px;
+  --outline: 1px solid #000000;
+  /* Always black outline */
+  --height: 100%;
+  /* full block: 100%, half block: 50% */
+  --top: -22.5px;
+  /* full block: -22.5px, half block: 15px */
+}
+
+/* Light theme */
+body.light-theme {
+  --bg-color: #f5f7fa;
+  --surface-color: #ffffff;
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --text-color: #1f2937;
+  --text-secondary: #6b7280;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 1200px;
+  height: 95vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--spacing);
+  box-sizing: border-box;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: var(--spacing);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 200;
+}
+
+.header h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 0;
+  background: linear-gradient(to right, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.header .subtitle {
+  font-size: 0.75rem;
+  margin-top: -12px;
+  opacity: 0.8;
+}
+
+.subtitle a {
+  color: var(--text-secondary);
+}
+
+.nav-links {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.nav-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.1);
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  background: rgba(59, 130, 246, 0.2);
+  text-decoration: underline;
+}
+
+.theme-toggle {
+  background: rgba(59, 130, 246, 0.1);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle:hover {
+  background: rgba(59, 130, 246, 0.2);
+  transform: scale(1.05);
+}
+
+/* Custom Search/Select Styling */
+.controls-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 800px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 16px;
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.toggles {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+
+.toggle-label:hover {
+  color: white;
+}
+
+.toggle-label input {
+  margin-right: 8px;
+  accent-color: var(--primary-color);
+  width: 16px;
+  height: 16px;
+}
+
+.inputs-grid {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.input-group {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-group label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding-left: 4px;
+}
+
+.search-container {
+  width: 100%;
+  position: relative;
+}
+
+.custom-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+#texture-search-top,
+#texture-search-side-l,
+#texture-search-side-r {
+  width: 100%;
+  padding: 12px 16px;
+  padding-right: 60px;
+  /* Make room for clear button and dropdown arrow */
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: var(--surface-color);
+  color: var(--text-color);
+  /* Use theme-aware text color */
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+/* Light theme input styling */
+body.light-theme #texture-search-top,
+body.light-theme #texture-search-side-l,
+body.light-theme #texture-search-side-r {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background-color: #ffffff;
+}
+
+#texture-search-top:focus,
+#texture-search-side-l:focus,
+#texture-search-side-r:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Dark theme specific focus styles */
+body:not(.light-theme) #texture-search-top:focus,
+body:not(.light-theme) #texture-search-side-l:focus,
+body:not(.light-theme) #texture-search-side-r:focus {
+  background-color: #232730;
+}
+
+.dropdown-arrow {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+  font-size: 10px;
+}
+
+.clear-btn {
+  position: absolute;
+  right: 36px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text-secondary);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  transition: all 0.2s;
+  z-index: 5;
+}
+
+.clear-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.clear-btn.hidden {
+  display: none;
+}
+
+body.light-theme .clear-btn {
+  background: rgba(0, 0, 0, 0.05);
+  color: #666;
+}
+
+body.light-theme .clear-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #000;
+}
+
+.input-group.hidden,
+.custom-options.hidden {
+  display: none !important;
+}
+
+/* Custom Dropdown List */
+.custom-options {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 100%;
+  max-height: 400px;
+  overflow-y: auto;
+  background-color: rgba(26, 29, 36, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px;
+  box-sizing: border-box;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  list-style: none;
+  margin: 0;
+  z-index: 1000;
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 transparent;
+}
+
+.custom-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-options::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 3px;
+}
+
+.custom-options.hidden {
+  display: none;
+}
+
+.custom-options li {
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.1s;
+  font-size: 14px;
+  color: #e5e7eb;
+  display: flex;
+  align-items: center;
+}
+
+.custom-options li:hover {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: white;
+}
+
+.custom-options li.no-result {
+  color: var(--text-secondary);
+  font-style: italic;
+  cursor: default;
+}
+
+.loading {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  text-align: right;
+  padding-right: 12px;
+}
+
+.loading.hidden {
+  display: none;
+}
+
+.viewer-container {
+  flex: 1;
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.footer {
+  text-align: center;
+  padding: 16px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+
+/* --- Cube Styles --- */
+.BlockRoot {
+  width: 300px;
+  height: 300px;
+  position: relative;
+  overflow: visible;
+  /* Removed outline to match dark theme cleaner look, optional */
+  outline: 1px solid #000;
+  /* For debugging */
+}
+
+.IsoScene {
+  position: absolute;
+  left: 50%;
+  top: var(--top);
+
+  transform:
+    translateX(-50%) rotateX(60deg) rotateZ(45deg);
+
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+  /* Smooth rotation if we add controls later */
+}
+
+/* キューブ */
+.Cube {
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  transform-style: preserve-3d;
+}
+
+/* 共通面 */
+.Face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+  /* Use theme-aware outline with 100% opacity */
+  outline: var(--outline);
+  outline-offset: -1px;
+  /* Keep outline inside the element */
+  background-color: #2a2d35;
+  /* Placeholder color before texture loads */
+}
+
+/* 上面 */
+.Face.top {
+  top: 0;
+  left: 0;
+}
+
+/* 左側面 */
+.Face.left {
+  top: 100%;
+  left: 0;
+  height: var(--height);
+  transform-origin: top left;
+  transform: rotateX(-90deg);
+  filter: brightness(0.85);
+  /* Simulate shading */
+}
+
+/* 右側面 */
+.Face.right {
+  top: 0;
+  left: 100%;
+  width: var(--height);
+  transform-origin: top left;
+  transform: rotateY(90deg);
+  filter: brightness(0.7);
+  /* Simulate shading */
+}
