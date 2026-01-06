@@ -1,0 +1,245 @@
+:root {
+    /* Dark theme (default) */
+    --bg-color: #0f1115;
+    --surface-color: #1a1d24;
+    --primary-color: #3b82f6;
+    --primary-hover: #2563eb;
+    --text-color: #ffffff;
+    --text-secondary: #9ca3af;
+    --border-radius: 20px;
+    --spacing: 40px;
+}
+
+/* Light theme */
+body.light-theme {
+    --bg-color: #f5f7fa;
+    --surface-color: #ffffff;
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --text-color: #1f2937;
+    --text-secondary: #4b5563;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 1000px;
+    padding: var(--spacing);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+/* Theme Toggle Position */
+.theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(59, 130, 246, 0.1);
+    border: none;
+    padding: 10px;
+    border-radius: 12px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.theme-toggle:hover {
+    background: rgba(59, 130, 246, 0.2);
+    transform: rotate(15deg) scale(1.1);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 60px;
+    animation: fadeInDown 0.8s ease-out;
+}
+
+.header h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin: 0;
+    background: linear-gradient(to right, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+}
+
+.header .subtitle {
+    font-size: 1rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin: 10px 0 20px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.subtitle a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.header .description {
+    color: var(--text-secondary);
+    max-width: 500px;
+    line-height: 1.6;
+    margin: 0 auto;
+}
+
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 30px;
+    width: 100%;
+    animation: fadeInUp 0.8s ease-out 0.2s backwards;
+}
+
+.tool-card {
+    text-decoration: none;
+    color: inherit;
+    background-color: var(--surface-color);
+    border-radius: var(--border-radius);
+    padding: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+body.light-theme .tool-card {
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.tool-card:hover {
+    transform: translateY(-10px);
+    border-color: var(--primary-color);
+    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15);
+}
+
+.tool-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.03));
+    opacity: 0;
+    transition: opacity 0.4s;
+}
+
+.tool-card:hover::before {
+    opacity: 1;
+}
+
+.card-content {
+    position: relative;
+    z-index: 1;
+}
+
+.icon {
+    font-size: 3rem;
+    margin-bottom: 24px;
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.tool-card:hover .icon {
+    transform: scale(1.2);
+}
+
+.tool-card h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 16px;
+}
+
+.tool-card p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0 0 30px;
+    font-size: 0.95rem;
+}
+
+.btn-text {
+    font-weight: 600;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: gap 0.2s;
+}
+
+.tool-card:hover .btn-text {
+    gap: 12px;
+}
+
+.footer {
+    margin-top: 80px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Animations */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+    .header h1 {
+        font-size: 2.5rem;
+    }
+
+    .app-container {
+        padding: 20px;
+    }
+
+    .tools-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -183,6 +183,10 @@ body {
   gap: 6px;
 }
 
+.input-group.block-search-group {
+  flex: 0 0 100%;
+}
+
 .input-group label {
   font-size: 12px;
   color: var(--text-secondary);
@@ -199,6 +203,7 @@ body {
   width: 100%;
 }
 
+#block-search,
 #texture-search-top,
 #texture-search-side-l,
 #texture-search-side-r {
@@ -210,6 +215,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   background-color: var(--surface-color);
   color: var(--text-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   /* Use theme-aware text color */
   font-size: 14px;
   font-family: inherit;
@@ -219,6 +225,7 @@ body {
 }
 
 /* Light theme input styling */
+body.light-theme #block-search,
 body.light-theme #texture-search-top,
 body.light-theme #texture-search-side-l,
 body.light-theme #texture-search-side-r {
@@ -226,14 +233,16 @@ body.light-theme #texture-search-side-r {
   background-color: #ffffff;
 }
 
+#block-search:focus,
 #texture-search-top:focus,
 #texture-search-side-l:focus,
 #texture-search-side-r:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 /* Dark theme specific focus styles */
+body:not(.light-theme) #block-search:focus,
 body:not(.light-theme) #texture-search-top:focus,
 body:not(.light-theme) #texture-search-side-l:focus,
 body:not(.light-theme) #texture-search-side-r:focus {
@@ -353,11 +362,52 @@ body.light-theme .clear-btn:hover {
 }
 
 .loading {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 4px;
-  text-align: right;
-  padding-right: 12px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1000;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.loading::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+body.light-theme .loading {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1f2937;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+body.light-theme .loading::before {
+  border-color: rgba(0, 0, 0, 0.1);
+  border-top-color: var(--primary-color);
 }
 
 .loading.hidden {

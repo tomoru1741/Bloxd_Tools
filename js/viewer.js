@@ -4,6 +4,7 @@ const PATH = 'default/textures';
 const API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${PATH}`;
 
 let textures = []; // Store fetched texture data
+let blockMapping = {}; // Store block -> texture info
 let faces = {}; // Store face elements
 let inputs = {}; // Store input elements
 let clearBtns = {}; // Store clear button elements
@@ -31,18 +32,21 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     inputs = {
+        block: document.getElementById('block-search'),
         top: document.getElementById('texture-search-top'),
         left: document.getElementById('texture-search-side-l'),
         right: document.getElementById('texture-search-side-r')
     };
 
     clearBtns = {
+        block: document.getElementById('clear-block-search'),
         top: document.getElementById('clear-texture-top'),
         left: document.getElementById('clear-texture-side-l'),
         right: document.getElementById('clear-texture-side-r')
     };
 
     lists = {
+        block: document.getElementById('list-block'),
         top: document.getElementById('list-top'),
         left: document.getElementById('list-side-l'),
         right: document.getElementById('list-side-r')
@@ -78,7 +82,7 @@ function setupListeners() {
     allFacesSameToggle.addEventListener('change', updateAllFacesSame);
 
     // Input Listeners
-    ['top', 'left', 'right'].forEach(key => {
+    ['block', 'top', 'left', 'right'].forEach(key => {
         const input = inputs[key];
         const list = lists[key];
 
@@ -90,27 +94,31 @@ function setupListeners() {
 
         input.addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
+            const sourceData = key === 'block' ? Object.keys(blockMapping).map(name => ({ name })) : textures;
 
             // Clear texture if input is empty
             if (val === '') {
-                clearTexture(key);
-                const filtered = textures.filter(t => t.name.toLowerCase().includes(val));
-                populateList(key, filtered);
+                if (key !== 'block') clearTexture(key);
+                populateList(key, sourceData);
                 openList(key);
                 return;
             }
 
-            // Check if input exactly matches a texture name
-            const exactMatch = textures.find(t => t.name.toLowerCase() === val);
-            const filtered = textures.filter(t => t.name.toLowerCase().includes(val));
+            // Check if input exactly matches a name
+            const exactMatch = sourceData.find(t => t.name.toLowerCase() === val);
+            const filtered = sourceData.filter(t => t.name.toLowerCase().includes(val));
 
-            // Only apply texture if there's an exact match
+            // Only apply if there's an exact match
             if (exactMatch) {
-                // Apply the texture immediately on exact match
-                selectTexture(key, exactMatch);
+                if (key === 'block') {
+                    selectBlock(exactMatch.name);
+                } else {
+                    selectTexture(key, exactMatch);
+                }
             } else {
-                // Clear texture if no exact match (even if there are partial matches)
-                clearTexture(key);
+                if (key !== 'block') {
+                    clearTexture(key);
+                }
             }
 
             populateList(key, filtered);
@@ -123,8 +131,10 @@ function setupListeners() {
             clearBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 inputs[key].value = '';
-                clearTexture(key);
-                populateList(key, textures);
+                if (key !== 'block') clearTexture(key);
+
+                const sourceData = key === 'block' ? Object.keys(blockMapping).map(name => ({ name })) : textures;
+                populateList(key, sourceData);
                 updateClearBtnVisibility(key);
                 inputs[key].focus();
             });
@@ -133,7 +143,7 @@ function setupListeners() {
 
     // Global click listener to close dropdowns
     document.addEventListener('click', (e) => {
-        ['top', 'left', 'right'].forEach(key => {
+        ['block', 'top', 'left', 'right'].forEach(key => {
             const wrapper = inputs[key]?.closest('.search-container');
             if (wrapper && !wrapper.contains(e.target)) {
                 closeList(key);
@@ -161,9 +171,9 @@ function updateAllFacesSame() {
 
     // Update label
     if (isSame) {
-        topLabel.textContent = 'Texture';
+        topLabel.textContent = 'テクスチャ';
     } else {
-        topLabel.textContent = 'Top';
+        topLabel.textContent = '上面';
     }
 
     // Show/Hide side inputs
@@ -215,6 +225,9 @@ async function init() {
 
         console.log(`Loaded ${textures.length} textures`);
 
+        // Fetch Block Mapping from bloxd.io
+        await fetchBlockMapping();
+
         // No default texture selection - start with empty cube
 
     } catch (error) {
@@ -223,9 +236,55 @@ async function init() {
     } finally {
         loadingIndicator.classList.add('hidden');
         // Re-enable all inputs after loading
+        inputs.block.disabled = false;
         inputs.top.disabled = false;
         inputs.left.disabled = false;
         inputs.right.disabled = false;
+    }
+}
+
+async function fetchBlockMapping() {
+    try {
+        console.log('Fetching block mapping from bloxd.io...');
+        const manifestRes = await fetch('https://bloxd.io/asset-manifest.json');
+        const manifest = await manifestRes.json();
+
+        // Find chunk 3 URL
+        const chunkKey = Object.keys(manifest.files).find(key => /^static\/js\/.*\.3\.[a-f0-9]+\.chunk\.js$/.test(key));
+        if (!chunkKey) throw new Error('Chunk 3 not found in manifest');
+
+        const chunkUrl = `https://bloxd.io${manifest.files[chunkKey]}`;
+        const chunkRes = await fetch(chunkUrl);
+        const chunkText = await chunkRes.text();
+
+        // Regex to extract block definitions
+        // Pattern: "Block Name":{displayName:{translationKey:...},ttb:...,textureInfo:...}
+        const regex = /"([^"]+)":\{displayName:\{translationKey:"[^"]+"\},ttb:[0-9]+,textureInfo:([^,}]*)(?:,texturePerSide:(\[[^\]]+\]))?/g;
+        let match;
+        const tempMapping = {};
+
+        while ((match = regex.exec(chunkText)) !== null) {
+            const name = match[1];
+            let textureInfo = match[2];
+            const texturePerSide = match[3] ? JSON.parse(match[3]) : null;
+
+            // Clean up textureInfo (remove quotes)
+            textureInfo = textureInfo.replace(/"/g, '');
+
+            // Only add if it has valid-looking textureInfo
+            if (textureInfo && textureInfo !== 'null' && textureInfo !== 'undefined') {
+                tempMapping[name] = {
+                    info: textureInfo.startsWith('[') ? JSON.parse(textureInfo.replace(/'/g, '"')) : textureInfo,
+                    perSide: texturePerSide
+                };
+            }
+        }
+
+        blockMapping = tempMapping;
+        console.log(`Loaded ${Object.keys(blockMapping).length} block mappings`);
+
+    } catch (err) {
+        console.error('Failed to fetch block mapping:', err);
     }
 }
 
@@ -243,14 +302,71 @@ function populateList(key, items) {
         return;
     }
 
-    items.forEach(tex => {
+    items.forEach(item => {
         const li = document.createElement('li');
-        li.textContent = tex.name;
+        li.textContent = item.name;
         li.addEventListener('click', () => {
-            selectTexture(key, tex);
+            if (key === 'block') {
+                selectBlock(item.name);
+            } else {
+                selectTexture(key, item);
+            }
         });
         list.appendChild(li);
     });
+}
+
+function selectBlock(name) {
+    const mapping = blockMapping[name];
+    if (!mapping) return;
+
+    inputs.block.value = name;
+    updateClearBtnVisibility('block');
+    closeList('block');
+
+    const info = mapping.info;
+    const perSide = mapping.perSide;
+
+    let texturesToApply = { top: null, left: null, right: null };
+
+    if (Array.isArray(info)) {
+        // Multi-texture block
+        // bloxd.io order: [right, left, top, bottom, front, back]
+        // Our viewer keys: top (index 2), left (index 1), right (index 0)
+        // Wait, let's check the texturePerSide mapping
+        if (perSide) {
+            texturesToApply.right = info[perSide[0]]; // Index 0 is right
+            texturesToApply.left = info[perSide[1]];  // Index 1 is left
+            texturesToApply.top = info[perSide[2]];   // Index 2 is top
+        } else {
+            // Fallback: use first few
+            texturesToApply.right = info[0];
+            texturesToApply.left = info[1] || info[0];
+            texturesToApply.top = info[2] || info[0];
+        }
+    } else {
+        // Single texture block
+        texturesToApply.top = info;
+        texturesToApply.left = info;
+        texturesToApply.right = info;
+    }
+
+    // Apply the textures if found in our texture list
+    ['top', 'left', 'right'].forEach(faceKey => {
+        const texName = texturesToApply[faceKey];
+        if (texName) {
+            const texture = textures.find(t => t.name === texName);
+            if (texture) {
+                selectTexture(faceKey, texture);
+            } else {
+                // Try fuzzy match or append .png if needed? 
+                // Usually the names match exactly.
+                console.warn(`Texture not found for block ${name}: ${texName}`);
+            }
+        }
+    });
+
+    // If "All Faces Same" is on, it will be handled by selectTexture('top', ...)
 }
 
 function selectTexture(key, texture) {
@@ -298,10 +414,12 @@ function clearTexture(key) {
 
 function handleInputFocus(key) {
     const val = inputs[key].value.toLowerCase();
+    const sourceData = key === 'block' ? Object.keys(blockMapping).map(name => ({ name })) : textures;
+
     if (!val) {
-        populateList(key, textures);
+        populateList(key, sourceData);
     } else {
-        const filtered = textures.filter(t => t.name.toLowerCase().includes(val));
+        const filtered = sourceData.filter(t => t.name.toLowerCase().includes(val));
         populateList(key, filtered);
     }
     openList(key);
@@ -312,7 +430,7 @@ function openList(key) {
     if (!lists[key]) return;
 
     // Close others
-    ['top', 'left', 'right'].forEach(k => {
+    ['block', 'top', 'left', 'right'].forEach(k => {
         if (k !== key && lists[k]) {
             lists[k].classList.add('hidden');
         }

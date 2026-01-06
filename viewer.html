@@ -22,6 +22,7 @@
             <p class="subtitle">Bloxd Tools for <a href="https://bloxdjapan.miraheze.org/">Bloxd Japan Wiki</a></p>
             <p>GitHub (Bloxdy/texture-packs) からテクスチャを選択して表示します。</p>
             <nav class="nav-links">
+                <a href="index.html" class="nav-link">🏠 Home</a>
                 <a href="converter.html" class="nav-link">➔ Model Converter</a>
                 <button id="theme-toggle" class="theme-toggle" title="テーマ切り替え">🌙</button>
             </nav>
@@ -37,6 +38,19 @@
                 </div>
 
                 <div class="inputs-grid">
+                    <!-- Block Search -->
+                    <!-- Currently disabled
+                    <div class="input-group block-search-group">
+                        <label>ブロック名</label>
+                        <div class="custom-select-wrapper search-container">
+                            <input type="text" id="block-search" placeholder="ブロックを検索..." autocomplete="off">
+                            <button type="button" class="clear-btn hidden" id="clear-block-search"
+                                title="クリア">×</button>
+                            <span class="dropdown-arrow">▼</span>
+                            <ul id="list-block" class="custom-options hidden"></ul>
+                        </div>
+                    </div>
+                    -->
                     <!-- Top Texture -->
                     <div class="input-group">
                         <label id="top-label">上面</label>
@@ -72,12 +86,11 @@
                         </div>
                     </div>
                 </div>
-
-                <div id="loading-indicator" class="loading hidden">テクスチャを読み込み中...</div>
             </div>
         </header>
 
         <main class="viewer-container">
+            <div id="loading-indicator" class="loading hidden">テクスチャを読み込み中...</div>
             <!-- Modified IsoScene for better centering within container -->
             <div class="BlockRoot">
                 <div class="IsoScene">

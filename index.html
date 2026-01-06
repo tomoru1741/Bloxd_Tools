@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloxd Tools Hub</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/home.css">
+</head>
+
+<body>
+
+    <div class="app-container">
+        <button id="theme-toggle" class="theme-toggle" title="テーマ切り替え">🌙</button>
+
+        <header class="header">
+            <h1>Bloxd Tools</h1>
+            <p class="subtitle">Bloxd Tools for <a href="https://bloxdjapan.miraheze.org/">Bloxd Japan Wiki</a></p>
+            <p class="description">Bloxd Japan Wiki向けのテクスチャ・モデルツール集です。</p>
+        </header>
+
+        <main class="tools-grid">
+            <a href="converter.html" class="tool-card">
+                <div class="card-content">
+                    <div class="icon">📦</div>
+                    <h2>Model Converter</h2>
+                    <p>GLB形式の3Dモデルを読み込み、お好みの視点でPNG画像として保存できます。</p>
+                    <span class="btn-text">ツールを開く ➔</span>
+                </div>
+            </a>
+
+            <a href="viewer.html" class="tool-card">
+                <div class="card-content">
+                    <div class="icon">🧱</div>
+                    <h2>Texture Viewer</h2>
+                    <p>テクスチャを立方体（またはハーフブロック）に貼り付けて、3Dでの見え方を確認できます。</p>
+                    <span class="btn-text">ツールを開く ➔</span>
+                </div>
+            </a>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Bloxd Tools Hub • Raw Data from GitHub</p>
+        </footer>
+    </div>
+
+    <script src="js/home.js"></script>
+</body>
+
+</html>
