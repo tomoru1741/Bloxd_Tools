@@ -84,7 +84,7 @@ body {
   opacity: 0.8;
 }
 
-.subtitle a {
+.header .subtitle a {
   color: var(--text-secondary);
 }
 
@@ -158,7 +158,7 @@ body {
 }
 
 .toggle-label:hover {
-  color: white;
+  color: var(--primary-color);
 }
 
 .toggle-label input {
@@ -477,8 +477,8 @@ body.light-theme .loading::before {
   outline: var(--outline);
   outline-offset: -1px;
   /* Keep outline inside the element */
-  background-color: #2a2d35;
-  /* Placeholder color before texture loads */
+  background-color: rgba(255, 255, 255, 0.05);
+  /* Transparent white */
 }
 
 /* 上面 */
@@ -500,11 +500,41 @@ body.light-theme .loading::before {
 
 /* 右側面 */
 .Face.right {
-  top: 0;
+  top: 100%;
   left: 100%;
-  width: var(--height);
+  width: 100%;
+  height: var(--height);
   transform-origin: top left;
-  transform: rotateY(90deg);
-  filter: brightness(0.7);
+  transform: rotateY(90deg) rotateZ(-90deg);
+  filter: brightness(0.85);
   /* Simulate shading */
+}
+
+/* Button Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.btn.primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
 }

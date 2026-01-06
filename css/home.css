@@ -64,7 +64,7 @@ body {
 
 .theme-toggle:hover {
     background: rgba(59, 130, 246, 0.2);
-    transform: rotate(15deg) scale(1.1);
+    transform: scale(1.1);
 }
 
 .header {
@@ -93,7 +93,7 @@ body {
     text-transform: uppercase;
 }
 
-.subtitle a {
+.header .subtitle a {
     color: var(--primary-color);
     text-decoration: none;
 }
@@ -103,6 +103,10 @@ body {
     max-width: 500px;
     line-height: 1.6;
     margin: 0 auto;
+}
+
+.header .description a {
+    color: var(--text-secondary);
 }
 
 .tools-grid {

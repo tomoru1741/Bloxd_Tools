@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/viewer.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
     <script src="js/viewer.js" defer></script>
 </head>
 
@@ -18,7 +19,7 @@
 
     <div class="app-container">
         <header class="header">
-            <h1>Bloxd Texture Viewer - 停止中</h1>
+            <h1>Bloxd Texture Viewer</h1>
             <p class="subtitle">Bloxd Tools for <a href="https://bloxdjapan.miraheze.org/">Bloxd Japan Wiki</a></p>
             <p>GitHub (Bloxdy/texture-packs) からテクスチャを選択して表示します。</p>
             <nav class="nav-links">
@@ -35,11 +36,16 @@
                     <label class="toggle-label">
                         <input type="checkbox" id="all-faces-same-toggle"> 全面同じテクスチャ
                     </label>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="show-special-toggle"> 特殊なブロックを表示
+                    </label>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="show-no-texture-toggle"> テクスチャなしを表示
+                    </label>
                 </div>
 
                 <div class="inputs-grid">
                     <!-- Block Search -->
-                    <!-- Currently disabled
                     <div class="input-group block-search-group">
                         <label>ブロック名</label>
                         <div class="custom-select-wrapper search-container">
@@ -50,7 +56,6 @@
                             <ul id="list-block" class="custom-options hidden"></ul>
                         </div>
                     </div>
-                    -->
                     <!-- Top Texture -->
                     <div class="input-group">
                         <label id="top-label">上面</label>
@@ -92,7 +97,7 @@
         <main class="viewer-container">
             <div id="loading-indicator" class="loading hidden">テクスチャを読み込み中...</div>
             <!-- Modified IsoScene for better centering within container -->
-            <div class="BlockRoot">
+            <div class="BlockRoot" id="block-root">
                 <div class="IsoScene">
                     <div class="Cube">
                         <div class="Face top"></div>
@@ -101,15 +106,14 @@
                     </div>
                 </div>
             </div>
+            <button class="btn primary" id="save-btn" style="margin-top: 20px;">PNG保存</button>
         </main>
 
         <footer class="footer">
-            <p>Raw Data from GitHub (Bloxdy/texture-packs)</p>
             <p>Made by tomoru1741</p>
         </footer>
     </div>
 
 </body>
-
 
 </html>

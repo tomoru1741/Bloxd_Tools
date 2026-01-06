@@ -77,7 +77,7 @@ body {
     opacity: 0.8;
 }
 
-.subtitle a {
+.header .subtitle a {
     color: var(--text-secondary);
 }
 
