@@ -41,7 +41,7 @@
             <p class="subtitle">Bloxd Tools for <a href="https://bloxdjapan.miraheze.org/">Bloxd Japan Wiki</a></p>
             <p>GitHub (Bloxdy/texture-packs) からモデルを選択してPNG保存できます。</p>
             <nav class="nav-links">
-                <a href="/Bloxd_Tools/" class="nav-link">🏠 Home</a>
+                <a href="index.html" class="nav-link">🏠 Home</a>
                 <a href="viewer.html" class="nav-link">➔ Texture Viewer</a>
                 <button id="theme-toggle" class="theme-toggle" title="テーマ切り替え">🌙</button>
             </nav>
@@ -58,14 +58,7 @@
                     <!-- Options will be populated by JS -->
                 </ul>
             </div>
-        </header>
-
-        <main class="viewer-container">
-            <div id="loading-indicator" class="loading hidden">モデルを読み込み中...</div>
-            <model-viewer id="viewer" shadow-intensity="1" environment-image="neutral" interaction-prompt="none"
-                min-camera-orbit="auto auto 5%" max-camera-orbit="auto auto 100%" alt="Select a model to view">
-            </model-viewer>
-
+            <!-- Moved controls into header -->
             <div class="controls" id="controls">
                 <div class="control-group">
                     <label class="checkbox-label">
@@ -82,6 +75,13 @@
                 </div>
                 <button class="btn primary" id="save-btn">PNG保存</button>
             </div>
+        </header>
+
+        <main class="viewer-container">
+            <div id="loading-indicator" class="loading hidden">モデルを読み込み中...</div>
+            <model-viewer id="viewer" shadow-intensity="1" environment-image="neutral" interaction-prompt="none"
+                min-camera-orbit="auto auto 5%" max-camera-orbit="auto auto 100%" alt="Select a model to view">
+            </model-viewer>
         </main>
 
         <footer class="footer">
@@ -91,6 +91,5 @@
 
     <script src="js/converter.js"></script>
 </body>
-
 
 </html>

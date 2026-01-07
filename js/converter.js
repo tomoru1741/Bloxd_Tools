@@ -182,7 +182,7 @@ function setCamera(orbit) {
 }
 
 function setCameraDefault() {
-    setCamera('-45deg 55deg auto');
+    setCamera('45deg 55deg auto');
 }
 
 function updateCameraLock() {

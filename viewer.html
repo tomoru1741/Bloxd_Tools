@@ -12,6 +12,7 @@
 
     <link rel="stylesheet" href="css/viewer.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="js/viewer.js" defer></script>
 </head>
 
@@ -21,9 +22,9 @@
         <header class="header">
             <h1>Bloxd Texture Viewer</h1>
             <p class="subtitle">Bloxd Tools for <a href="https://bloxdjapan.miraheze.org/">Bloxd Japan Wiki</a></p>
-            <p>GitHub (Bloxdy/texture-packs) からテクスチャを選択して表示します。</p>
+            <p>ゲーム内からテクスチャを選択して表示します。各面のカスタマイズのほか、PNG保存が可能です。ハーフブロックにも対応しています。</p>
             <nav class="nav-links">
-                <a href="/Bloxd_Tools/" class="nav-link">🏠 Home</a>
+                <a href="index.html" class="nav-link">🏠 Home</a>
                 <a href="converter.html" class="nav-link">➔ Model Converter</a>
                 <button id="theme-toggle" class="theme-toggle" title="テーマ切り替え">🌙</button>
             </nav>
@@ -42,6 +43,18 @@
                     <label class="toggle-label">
                         <input type="checkbox" id="show-no-texture-toggle"> テクスチャなしを表示
                     </label>
+                </div>
+
+                <!-- Multi Select Controls -->
+                <div class="toggles" style="margin-top: 8px; justify-content: center; align-items: center;">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="multi-select-toggle"> 複数選択モード
+                    </label>
+                    <div id="multi-select-actions" class="multi-select-actions hidden"
+                        style="display: flex; align-items: center; gap: 10px;">
+                        <button id="select-all-btn" class="btn secondary">全選択</button>
+                        <span id="selected-count" style="font-size: 0.9rem; color: var(--text-secondary);">0個選択中</span>
+                    </div>
                 </div>
 
                 <div class="inputs-grid">
@@ -115,6 +128,5 @@
     </div>
 
 </body>
-
 
 </html>

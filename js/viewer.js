@@ -7,12 +7,23 @@ let clearBtns = {}; // Store clear button elements
 let lists = {}; // Store list elements
 
 // Elements
-// Elements
 let halfBlockToggle;
 let allFacesSameToggle;
 let showSpecialToggle;
 let showNoTextureToggle;
 let saveBtn;
+
+// Multi-Select Elements
+let multiSelectToggle;
+let selectAllBtn;
+let selectedCountSpan;
+let multiSelectActions;
+let selectedBlocks = new Set();
+let currentFilteredBlockItems = [];
+
+function updateSelectedCount() {
+    if (selectedCountSpan) selectedCountSpan.textContent = `${selectedBlocks.size}個選択中`;
+}
 let loadingIndicator;
 let sideInputs;
 let topLabel;
@@ -24,6 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
     showSpecialToggle = document.getElementById('show-special-toggle');
     showNoTextureToggle = document.getElementById('show-no-texture-toggle');
     saveBtn = document.getElementById('save-btn');
+
+    // Multi-Select Elements
+    multiSelectToggle = document.getElementById('multi-select-toggle');
+    selectAllBtn = document.getElementById('select-all-btn');
+    selectedCountSpan = document.getElementById('selected-count');
+    multiSelectActions = document.getElementById('multi-select-actions');
+
     loadingIndicator = document.getElementById('loading-indicator');
     sideInputs = document.querySelectorAll('.side-input');
     topLabel = document.getElementById('top-label');
@@ -96,6 +114,30 @@ function setupListeners() {
 
     // Save Button
     if (saveBtn) saveBtn.addEventListener('click', saveImage);
+
+    // Multi-Select Listeners
+    multiSelectToggle.addEventListener('change', () => {
+        selectedBlocks.clear();
+        updateSelectedCount();
+        if (multiSelectToggle.checked) {
+            multiSelectActions.classList.remove('hidden');
+        } else {
+            multiSelectActions.classList.add('hidden');
+        }
+        handleInputFocus('block');
+    });
+
+    selectAllBtn.addEventListener('click', () => {
+        if (!currentFilteredBlockItems || currentFilteredBlockItems.length === 0) return;
+        const allSelected = currentFilteredBlockItems.every(item => selectedBlocks.has(item.name));
+        if (allSelected) {
+            currentFilteredBlockItems.forEach(item => selectedBlocks.delete(item.name));
+        } else {
+            currentFilteredBlockItems.forEach(item => selectedBlocks.add(item.name));
+        }
+        updateSelectedCount();
+        populateList('block', currentFilteredBlockItems);
+    });
 
     // Input Listeners
     ['block', 'top', 'left', 'right'].forEach(key => {
@@ -473,6 +515,8 @@ async function fetchBlockMapping() {
 }
 
 function populateList(key, items) {
+    if (key === 'block') currentFilteredBlockItems = items;
+
     const list = lists[key];
     if (!list) return;
 
@@ -489,6 +533,25 @@ function populateList(key, items) {
     items.forEach(item => {
         const li = document.createElement('li');
 
+        if (key === 'block' && multiSelectToggle && multiSelectToggle.checked) {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = selectedBlocks.has(item.name);
+            checkbox.style.marginRight = '8px';
+            // Stop propagation to avoid triggering li click immediately if user meant just to check
+            // But actually li click toggles too, so maybe let it propagate? 
+            // Better to handle in li click.
+            checkbox.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (checkbox.checked) selectedBlocks.add(item.name);
+                else selectedBlocks.delete(item.name);
+                updateSelectedCount();
+                // Preview on check?
+                selectBlock(item.name);
+            });
+            li.appendChild(checkbox);
+        }
+
         let label = item.name;
 
         // Check for missing textures if this is the block list
@@ -497,13 +560,10 @@ function populateList(key, items) {
             if (mapping) {
                 const info = mapping.info;
                 const texNames = Array.isArray(info) ? info : [info];
-                // Check if any referenced texture is missing
-                // Note: info can contain numbers or other non-string data which are naturally "missing"
                 const hasMissing = texNames.some(tn =>
                     typeof tn === 'string' && !textures.find(t => t.name.toLowerCase() === tn.toLowerCase())
                 );
 
-                // Also check if all are numbers (like Water: [0.5, 0.8...]) -> definitely missing texture assets
                 const allNumbers = texNames.every(tn => typeof tn === 'number');
 
                 if (hasMissing || allNumbers) {
@@ -512,10 +572,25 @@ function populateList(key, items) {
             }
         }
 
-        li.innerHTML = label;
+        const textSpan = document.createElement('span');
+        textSpan.innerHTML = label;
+        li.appendChild(textSpan);
+
         li.addEventListener('click', () => {
             if (key === 'block') {
-                selectBlock(item.name);
+                if (multiSelectToggle && multiSelectToggle.checked) {
+                    const isSelected = selectedBlocks.has(item.name);
+                    if (isSelected) selectedBlocks.delete(item.name);
+                    else selectedBlocks.add(item.name);
+
+                    const cb = li.querySelector('input[type="checkbox"]');
+                    if (cb) cb.checked = !isSelected;
+
+                    updateSelectedCount();
+                    selectBlock(item.name);
+                } else {
+                    selectBlock(item.name);
+                }
             } else {
                 selectTexture(key, item);
             }
@@ -726,51 +801,125 @@ function updateClearBtnVisibility(key) {
     }
 }
 
-function saveImage() {
+async function saveImage() {
     const element = document.getElementById('block-root');
     if (!element) return;
 
+    // Check if multi-select mode
+    if (multiSelectToggle && multiSelectToggle.checked && selectedBlocks.size > 0) {
+        await saveMultipleBlocks();
+    } else {
+        await saveSingleBlock();
+    }
+}
+
+async function saveSingleBlock() {
+    const element = document.getElementById('block-root');
     let filename = 'bloxd-block';
     if (inputs.block && inputs.block.value) {
         filename = inputs.block.value.replace(/[\\/:*?"<>|]/g, '_');
     }
 
-    // dom-to-image capture with scaling for quality
-    const scale = 2; // Capture at 2x resolution to ensure crisp downscaling
+    const scale = 2;
 
-    domtoimage.toPng(element, {
-        width: element.offsetWidth * scale,
-        height: element.offsetHeight * scale,
-        style: {
-            transform: `scale(${scale})`,
-            transformOrigin: 'top left',
-            width: element.offsetWidth + 'px',
-            height: element.offsetHeight + 'px',
-            margin: 0 // Prevent margin issues
-        }
-    })
-        .then(function (dataUrl) {
+    try {
+        const dataUrl = await domtoimage.toPng(element, {
+            width: element.offsetWidth * scale,
+            height: element.offsetHeight * scale,
+            style: {
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left',
+                width: element.offsetWidth + 'px',
+                height: element.offsetHeight + 'px',
+                margin: 0
+            }
+        });
+
+        const img = new Image();
+        img.src = dataUrl;
+        await new Promise(resolve => { img.onload = resolve; });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 300;
+        canvas.height = 300;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, 300, 300);
+
+        const link = document.createElement('a');
+        link.download = `${filename}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    } catch (error) {
+        console.error('Save failed:', error);
+        alert('画像の保存に失敗しました: ' + error.message);
+    }
+}
+
+async function saveMultipleBlocks() {
+    const zip = new JSZip();
+    const element = document.getElementById('block-root');
+    const scale = 2;
+
+    const blockNames = Array.from(selectedBlocks);
+    let completed = 0;
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = `保存中... (0/${blockNames.length})`;
+
+    for (const blockName of blockNames) {
+        try {
+            selectBlock(blockName);
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            const dataUrl = await domtoimage.toPng(element, {
+                width: element.offsetWidth * scale,
+                height: element.offsetHeight * scale,
+                style: {
+                    transform: `scale(${scale})`,
+                    transformOrigin: 'top left',
+                    width: element.offsetWidth + 'px',
+                    height: element.offsetHeight + 'px',
+                    margin: 0
+                }
+            });
+
             const img = new Image();
             img.src = dataUrl;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = 300;
-                canvas.height = 300;
-                const ctx = canvas.getContext('2d');
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
+            await new Promise(resolve => { img.onload = resolve; });
 
-                // Draw resized to 300x300
-                ctx.drawImage(img, 0, 0, 300, 300);
+            const canvas = document.createElement('canvas');
+            canvas.width = 300;
+            canvas.height = 300;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, 300, 300);
 
-                const link = document.createElement('a');
-                link.download = `${filename}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            };
-        })
-        .catch(function (error) {
-            console.error('Save failed:', error);
-            alert('画像の保存に失敗しました: ' + error.message);
-        });
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+
+            const filename = blockName.replace(/[\\/:*?"<>|]/g, '_') + '.png';
+            zip.file(filename, blob);
+
+            completed++;
+            saveBtn.textContent = `保存中... (${completed}/${blockNames.length})`;
+        } catch (error) {
+            console.error(`Failed to capture ${blockName}:`, error);
+        }
+    }
+
+    try {
+        const content = await zip.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.download = 'bloxd-blocks.zip';
+        link.href = URL.createObjectURL(content);
+        link.click();
+    } catch (error) {
+        console.error('ZIP generation failed:', error);
+        alert('ZIP生成に失敗しました');
+    }
+
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'PNG保存';
 }

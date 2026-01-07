@@ -34,20 +34,21 @@ body {
   font-family: 'Inter', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-color);
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
-  overflow: hidden;
+  /* align-items: center; Remove to allow top alignment with scroll */
+  overflow-y: auto;
 }
 
 .app-container {
   width: 100%;
   max-width: 1200px;
-  height: 95vh;
+  min-height: 95vh;
   display: flex;
   flex-direction: column;
-  padding: 0 var(--spacing);
+  padding: var(--spacing);
+  /* Use var for consistency */
   box-sizing: border-box;
 }
 
@@ -166,6 +167,16 @@ body {
   accent-color: var(--primary-color);
   width: 16px;
   height: 16px;
+}
+
+#multi-select-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#multi-select-actions.hidden {
+  display: none !important;
 }
 
 .inputs-grid {
@@ -477,7 +488,7 @@ body.light-theme .loading::before {
   outline: var(--outline);
   outline-offset: -1px;
   /* Keep outline inside the element */
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: transparent;
   /* Transparent white */
 }
 
@@ -494,8 +505,6 @@ body.light-theme .loading::before {
   height: var(--height);
   transform-origin: top left;
   transform: rotateX(-90deg);
-  filter: brightness(0.85);
-  /* Simulate shading */
 }
 
 /* 右側面 */
@@ -506,8 +515,6 @@ body.light-theme .loading::before {
   height: var(--height);
   transform-origin: top left;
   transform: rotateY(90deg) rotateZ(-90deg);
-  filter: brightness(0.85);
-  /* Simulate shading */
 }
 
 /* Button Styles */
@@ -533,6 +540,17 @@ body.light-theme .loading::before {
 .btn.primary:hover {
   background-color: var(--primary-hover);
   transform: translateY(-1px);
+}
+
+.btn.secondary {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--text-color);
+  min-width: 44px;
+  /* Ensure touch-friendly size */
+}
+
+.btn.secondary:hover {
+  background: rgba(59, 130, 246, 0.2);
 }
 
 .btn:active {
