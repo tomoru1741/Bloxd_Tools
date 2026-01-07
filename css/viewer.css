@@ -175,7 +175,14 @@ body {
   gap: 10px;
 }
 
-#multi-select-actions.hidden {
+#download-warning {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+#multi-select-actions.hidden,
+#download-warning.hidden {
   display: none !important;
 }
 
@@ -451,9 +458,6 @@ body.light-theme .loading::before {
   height: 300px;
   position: relative;
   overflow: visible;
-  /* Removed outline to match dark theme cleaner look, optional */
-  outline: 1px solid #000;
-  /* For debugging */
 }
 
 .IsoScene {
@@ -566,4 +570,39 @@ body.light-theme .loading::before {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   padding: 12px 24px;
   font-size: 1rem;
+}
+
+#cancel-btn {
+  position: fixed;
+  bottom: 90px;
+  right: 30px;
+  background-color: #ef4444;
+  color: white;
+  border-radius: 50px;
+  padding: 12px 24px;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#cancel-btn:hover {
+  background-color: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
+}
+
+#cancel-btn.hidden {
+  display: none !important;
+}
+
+#cancel-btn:disabled {
+  background-color: #991b1b;
+  cursor: not-allowed;
+  transform: none;
 }

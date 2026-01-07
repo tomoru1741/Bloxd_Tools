@@ -344,7 +344,7 @@ body.light-theme .loading::before {
 }
 
 model-viewer {
-    width: 300px;
+    width: 100%;
     height: 300px;
     --poster-color: transparent;
 }

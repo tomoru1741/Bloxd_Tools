@@ -50,13 +50,13 @@
                     <label class="toggle-label">
                         <input type="checkbox" id="multi-select-toggle"> 複数選択モード
                     </label>
-                    <div id="multi-select-actions" class="multi-select-actions hidden"
-                        style="display: flex; align-items: center; gap: 10px;">
+                    <div id="multi-select-actions" class="hidden">
                         <button id="select-all-btn" class="btn secondary">全選択</button>
                         <span id="selected-count" style="font-size: 0.9rem; color: var(--text-secondary);">0個選択中</span>
                     </div>
                 </div>
-
+                <span id="download-warning"
+                    class="hidden">Windowsをお使いの場合は、ダウンロードされたZIPファイルの解凍前に「プロパティー」→「全般」→「セキュリティ」から「許可する」にチェックを入れる必要がある場合があります。</span>
                 <div class="inputs-grid">
                     <!-- Block Search -->
                     <div class="input-group block-search-group">
@@ -119,6 +119,8 @@
                     </div>
                 </div>
             </div>
+            <button class="btn secondary hidden" id="cancel-btn"
+                style="margin-top: 20px; background-color: #ef4444; color: white;">🚫 キャンセル</button>
             <button class="btn primary" id="save-btn" style="margin-top: 20px;">PNG保存</button>
         </main>
 

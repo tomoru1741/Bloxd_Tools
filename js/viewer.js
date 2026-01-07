@@ -21,12 +21,19 @@ let multiSelectActions;
 let selectedBlocks = new Set();
 let currentFilteredBlockItems = [];
 
+// Cancellation
+let cancelBtn;
+let isExportCanceling = false;
+
 function updateSelectedCount() {
     if (selectedCountSpan) selectedCountSpan.textContent = `${selectedBlocks.size}個選択中`;
 }
 let loadingIndicator;
 let sideInputs;
 let topLabel;
+
+// OS
+let userAgent;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Get Elements
@@ -35,12 +42,14 @@ document.addEventListener('DOMContentLoaded', () => {
     showSpecialToggle = document.getElementById('show-special-toggle');
     showNoTextureToggle = document.getElementById('show-no-texture-toggle');
     saveBtn = document.getElementById('save-btn');
+    cancelBtn = document.getElementById('cancel-btn');
 
     // Multi-Select Elements
     multiSelectToggle = document.getElementById('multi-select-toggle');
     selectAllBtn = document.getElementById('select-all-btn');
     selectedCountSpan = document.getElementById('selected-count');
     multiSelectActions = document.getElementById('multi-select-actions');
+    downloadWarning = document.getElementById('download-warning');
 
     loadingIndicator = document.getElementById('loading-indicator');
     sideInputs = document.querySelectorAll('.side-input');
@@ -72,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
         left: document.getElementById('list-side-l'),
         right: document.getElementById('list-side-r')
     };
+
+    userAgent = window.navigator.userAgent.toLowerCase();
 
     // Theme toggle
     const themeToggle = document.getElementById('theme-toggle');
@@ -115,16 +126,34 @@ function setupListeners() {
     // Save Button
     if (saveBtn) saveBtn.addEventListener('click', saveImage);
 
+    // Cancel Button
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+            isExportCanceling = true;
+            cancelBtn.textContent = 'キャンセル中...';
+            cancelBtn.disabled = true;
+        });
+    }
+
     // Multi-Select Listeners
     multiSelectToggle.addEventListener('change', () => {
         selectedBlocks.clear();
         updateSelectedCount();
         if (multiSelectToggle.checked) {
             multiSelectActions.classList.remove('hidden');
+            if (userAgent.indexOf("windows nt") !== -1 && downloadWarning) {
+                downloadWarning.classList.remove('hidden');
+            }
         } else {
             multiSelectActions.classList.add('hidden');
+            if (downloadWarning && !downloadWarning.classList.contains('hidden')) {
+                downloadWarning.classList.add('hidden');
+            }
         }
-        handleInputFocus('block');
+
+        if (!lists.block.classList.contains('hidden')) {
+            handleInputFocus('block');
+        }
     });
 
     selectAllBtn.addEventListener('click', () => {
@@ -546,8 +575,8 @@ function populateList(key, items) {
                 if (checkbox.checked) selectedBlocks.add(item.name);
                 else selectedBlocks.delete(item.name);
                 updateSelectedCount();
-                // Preview on check?
-                selectBlock(item.name);
+                // Preview on check, keep list open
+                selectBlock(item.name, true);
             });
             li.appendChild(checkbox);
         }
@@ -587,7 +616,8 @@ function populateList(key, items) {
                     if (cb) cb.checked = !isSelected;
 
                     updateSelectedCount();
-                    selectBlock(item.name);
+                    // Preview on click, keep list open
+                    selectBlock(item.name, true);
                 } else {
                     selectBlock(item.name);
                 }
@@ -599,13 +629,15 @@ function populateList(key, items) {
     });
 }
 
-function selectBlock(name) {
+function selectBlock(name, keepOpen = false) {
     const mapping = blockMapping[name];
     if (!mapping) return;
 
     inputs.block.value = name;
     updateClearBtnVisibility('block');
-    closeList('block');
+    if (!keepOpen) {
+        closeList('block');
+    }
 
     const info = mapping.info;
     const perSide = mapping.perSide;
@@ -817,8 +849,12 @@ async function saveSingleBlock() {
     const element = document.getElementById('block-root');
     let filename = 'bloxd-block';
     if (inputs.block && inputs.block.value) {
-        filename = inputs.block.value.replace(/[\\/:*?"<>|]/g, '_');
+        filename = inputs.block.value
+            .replace(/[\\/:*?"<>|]/g, '_')
+            .replace(/[\x00-\x1f]/g, '')
+            .trim();
     }
+    if (!filename) filename = 'bloxd-block';
 
     const scale = 2;
 
@@ -868,7 +904,16 @@ async function saveMultipleBlocks() {
     saveBtn.disabled = true;
     saveBtn.textContent = `保存中... (0/${blockNames.length})`;
 
+    // Reset Cancel Button
+    if (cancelBtn) {
+        cancelBtn.classList.remove('hidden');
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = '🚫 キャンセル';
+        isExportCanceling = false;
+    }
+
     for (const blockName of blockNames) {
+        if (isExportCanceling) break;
         try {
             selectBlock(blockName);
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -899,8 +944,14 @@ async function saveMultipleBlocks() {
 
             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 
-            const filename = blockName.replace(/[\\/:*?"<>|]/g, '_') + '.png';
-            zip.file(filename, blob);
+            // Strict sanitization for Windows compatibility
+            let safeName = blockName
+                .replace(/[\\/:*?"<>|]/g, '_')
+                .replace(/[\x00-\x1f]/g, '')
+                .trim();
+            if (!safeName) safeName = `block_${completed}`;
+
+            zip.file(`${safeName}.png`, blob);
 
             completed++;
             saveBtn.textContent = `保存中... (${completed}/${blockNames.length})`;
@@ -909,17 +960,28 @@ async function saveMultipleBlocks() {
         }
     }
 
-    try {
-        const content = await zip.generateAsync({ type: 'blob' });
-        const link = document.createElement('a');
-        link.download = 'bloxd-blocks.zip';
-        link.href = URL.createObjectURL(content);
-        link.click();
-    } catch (error) {
-        console.error('ZIP generation failed:', error);
-        alert('ZIP生成に失敗しました');
+    if (!isExportCanceling) {
+        try {
+            const content = await zip.generateAsync({
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: {
+                    level: 6
+                }
+            });
+            const link = document.createElement('a');
+            link.download = 'bloxd-blocks.zip';
+            link.href = URL.createObjectURL(content);
+            link.click();
+        } catch (error) {
+            console.error('ZIP generation failed:', error);
+            alert('ZIP生成に失敗しました');
+        }
+    } else {
+        alert('エクスポートをキャンセルしました。');
     }
 
     saveBtn.disabled = false;
     saveBtn.textContent = 'PNG保存';
+    if (cancelBtn) cancelBtn.classList.add('hidden');
 }
