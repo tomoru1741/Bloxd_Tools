@@ -175,14 +175,7 @@ body {
   gap: 10px;
 }
 
-#download-warning {
-  color: var(--text-secondary);
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-#multi-select-actions.hidden,
-#download-warning.hidden {
+#multi-select-actions.hidden {
   display: none !important;
 }
 

@@ -35,6 +35,70 @@ let topLabel;
 // OS
 let userAgent;
 
+
+function isTextureHalfHeight(texture) {
+    try {
+        const img = new Image();
+        img.src = texture.base64;
+
+        if (img.complete && img.naturalWidth > 0) {
+            return img.naturalWidth === 16 && img.naturalHeight === 8;
+        }
+    } catch (e) {
+        console.warn('Failed to parse texture dimensions:', texture.name);
+    }
+
+    return false;
+}
+
+function isTextureNonStandard(texture) {
+    try {
+        const img = new Image();
+        img.src = texture.base64;
+
+        if (img.complete && img.naturalWidth > 0) {
+            const aspectRatio = img.naturalWidth / img.naturalHeight;
+            return aspectRatio < 0.5 || aspectRatio > 2.0;
+        }
+    } catch (e) {
+        console.warn('Failed to parse texture dimensions:', texture.name);
+    }
+
+    return false;
+}
+
+function isHalfHeightBlock(blockName) {
+    // Check if block name ends with " Slab"
+    if (blockName.endsWith(' Slab')) {
+        return true;
+    }
+
+    // Check if block name matches "Fallen * Leaves" pattern
+    if (blockName.startsWith('Fallen ') && blockName.endsWith(' Leaves')) {
+        return true;
+    }
+
+    return false;
+}
+
+function isNonFullBlock(blockName) {
+    if (isHalfHeightBlock(blockName)) return false;
+
+    const mapping = blockMapping[blockName];
+    if (!mapping) return false;
+
+    const info = mapping.info;
+    const texNames = Array.isArray(info) ? info : [info];
+
+    return texNames.some(texName => {
+        if (typeof texName !== 'string') return false;
+        const texture = textures.find(t => t.name.toLowerCase() === texName.toLowerCase());
+        if (!texture || !texture.base64) return false;
+
+        return isTextureNonStandard(texture);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Get Elements
     halfBlockToggle = document.getElementById('half-block-toggle');
@@ -49,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
     selectAllBtn = document.getElementById('select-all-btn');
     selectedCountSpan = document.getElementById('selected-count');
     multiSelectActions = document.getElementById('multi-select-actions');
-    downloadWarning = document.getElementById('download-warning');
 
     loadingIndicator = document.getElementById('loading-indicator');
     sideInputs = document.querySelectorAll('.side-input');
@@ -141,14 +204,8 @@ function setupListeners() {
         updateSelectedCount();
         if (multiSelectToggle.checked) {
             multiSelectActions.classList.remove('hidden');
-            if (userAgent.indexOf("windows nt") !== -1 && downloadWarning) {
-                downloadWarning.classList.remove('hidden');
-            }
         } else {
             multiSelectActions.classList.add('hidden');
-            if (downloadWarning && !downloadWarning.classList.contains('hidden')) {
-                downloadWarning.classList.add('hidden');
-            }
         }
 
         if (!lists.block.classList.contains('hidden')) {
@@ -157,15 +214,60 @@ function setupListeners() {
     });
 
     selectAllBtn.addEventListener('click', () => {
-        if (!currentFilteredBlockItems || currentFilteredBlockItems.length === 0) return;
-        const allSelected = currentFilteredBlockItems.every(item => selectedBlocks.has(item.name));
+        // Recalculate filtered items to ensure we select exactly what matches current filters
+        const sourceData = Object.keys(blockMapping).map(name => ({ name }));
+        const val = inputs.block.value.toLowerCase();
+
+        const showSpecial = showSpecialToggle.checked;
+        const showNoTexture = showNoTextureToggle.checked;
+
+        let itemsToSelect = sourceData.filter(item => {
+            const name = item.name;
+            const isSpecial = name.includes('|') || isNonFullBlock(name);
+
+            // Priority: Special Check
+            if (isSpecial) return showSpecial;
+
+            // No Texture Check
+            const mapping = blockMapping[name];
+            let hasNoTexture = false;
+            if (mapping) {
+                const info = mapping.info;
+                const texNames = Array.isArray(info) ? info : [info];
+                const hasMissing = texNames.some(tn =>
+                    typeof tn === 'string' && !textures.find(t => t.name.toLowerCase() === tn.toLowerCase())
+                );
+                const allNumbers = texNames.every(tn => typeof tn === 'number');
+                if (hasMissing || allNumbers) hasNoTexture = true;
+            }
+
+            if (hasNoTexture) return showNoTexture;
+
+            return true;
+        });
+
+        // Apply search filter
+        if (val) {
+            itemsToSelect = itemsToSelect.filter(item => item.name.toLowerCase().includes(val));
+        }
+
+        // Update global filtered items just in case
+        currentFilteredBlockItems = itemsToSelect;
+
+        if (itemsToSelect.length === 0) return;
+
+        const allSelected = itemsToSelect.every(item => selectedBlocks.has(item.name));
         if (allSelected) {
-            currentFilteredBlockItems.forEach(item => selectedBlocks.delete(item.name));
+            itemsToSelect.forEach(item => selectedBlocks.delete(item.name));
         } else {
-            currentFilteredBlockItems.forEach(item => selectedBlocks.add(item.name));
+            itemsToSelect.forEach(item => selectedBlocks.add(item.name));
         }
         updateSelectedCount();
-        populateList('block', currentFilteredBlockItems);
+
+        // Refresh list if visible
+        if (!lists.block.classList.contains('hidden')) {
+            populateList('block', itemsToSelect);
+        }
     });
 
     // Input Listeners
@@ -191,9 +293,41 @@ function setupListeners() {
                 return;
             }
 
+            // Apply toggle filters first for blocks
+            let filteredData = sourceData;
+            if (key === 'block') {
+                const showSpecial = showSpecialToggle.checked;
+                const showNoTexture = showNoTextureToggle.checked;
+
+                filteredData = sourceData.filter(item => {
+                    const name = item.name;
+                    const isSpecial = name.includes('|') || isNonFullBlock(name);
+
+                    // Priority: Special Check
+                    if (isSpecial) return showSpecial;
+
+                    // No Texture Check
+                    const mapping = blockMapping[name];
+                    let hasNoTexture = false;
+                    if (mapping) {
+                        const info = mapping.info;
+                        const texNames = Array.isArray(info) ? info : [info];
+                        const hasMissing = texNames.some(tn =>
+                            typeof tn === 'string' && !textures.find(t => t.name.toLowerCase() === tn.toLowerCase())
+                        );
+                        const allNumbers = texNames.every(tn => typeof tn === 'number');
+                        if (hasMissing || allNumbers) hasNoTexture = true;
+                    }
+
+                    if (hasNoTexture) return showNoTexture;
+
+                    return true;
+                });
+            }
+
             // Check if input exactly matches a name
-            const exactMatch = sourceData.find(t => t.name.toLowerCase() === val);
-            const filtered = sourceData.filter(t => t.name.toLowerCase().includes(val));
+            const exactMatch = filteredData.find(t => t.name.toLowerCase() === val);
+            const searchFiltered = filteredData.filter(t => t.name.toLowerCase().includes(val));
 
             // Only apply if there's an exact match
             if (exactMatch) {
@@ -208,7 +342,7 @@ function setupListeners() {
                 }
             }
 
-            populateList(key, filtered);
+            populateList(key, searchFiltered);
             openList(key);
             updateClearBtnVisibility(key);
         });
@@ -597,6 +731,8 @@ function populateList(key, items) {
 
                 if (hasMissing || allNumbers) {
                     label += ' <span style="opacity: 0.6; font-size: 0.85em; margin-left: 8px; font-weight: normal; color: #ff8888;">(テクスチャなし)</span>';
+                } else if (isHalfHeightBlock(item.name)) {
+                    label += ' <span style="opacity: 0.6; font-size: 0.85em; margin-left: 8px; font-weight: normal; color: #88ccff;">(ハーフブロック)</span>';
                 }
             }
         }
@@ -634,6 +770,14 @@ function selectBlock(name, keepOpen = false) {
     if (!mapping) return;
 
     inputs.block.value = name;
+
+    // Auto-toggle half-block based on name pattern
+    const shouldBeHalf = isHalfHeightBlock(name);
+    if (shouldBeHalf !== halfBlockToggle.checked) {
+        halfBlockToggle.checked = shouldBeHalf;
+        updateHalfBlock();
+    }
+
     updateClearBtnVisibility('block');
     if (!keepOpen) {
         closeList('block');
@@ -678,96 +822,113 @@ function selectBlock(name, keepOpen = false) {
             }
         }
     } else {
+        // Single texture
         texturesToApply.top = info;
         texturesToApply.left = info;
         texturesToApply.right = info;
     }
 
-    // Apply the textures
-    ['top', 'left', 'right'].forEach(faceKey => {
-        let texName = texturesToApply[faceKey];
+    // Apply textures
+    Object.keys(texturesToApply).forEach(face => {
+        const texName = texturesToApply[face];
         if (texName) {
-            const texture = textures.find(t => t.name.toLowerCase() === texName.toLowerCase());
-            if (texture) {
-                selectTexture(faceKey, texture);
-            } else {
-                console.warn(`Texture not found: ${texName}`);
-                missingTextures.push(texName);
+            selectTexture(face, { name: texName }, true); // Pass true to indicate auto-selection
+
+            // Check if texture is missing
+            if (typeof texName === 'string' && !textures.find(t => t.name.toLowerCase() === texName.toLowerCase())) {
+                missingTextures.push(`${face}: ${texName}`);
             }
         }
     });
 
-    // Show warning if textures are missing
+    // Alert if textures are missing
     if (missingTextures.length > 0) {
-        const list = lists.block;
-        if (list) {
-            list.innerHTML = '';
-            const warningLi = document.createElement('li');
-            warningLi.classList.add('no-result');
-            warningLi.style.color = '#ff6b6b';
-            warningLi.textContent = `⚠️ テクスチャが見つかりません: ${missingTextures.join(', ')}`;
-            list.appendChild(warningLi);
-            list.classList.remove('hidden');
-            setTimeout(() => list.classList.add('hidden'), 3000);
+        // Optional: show a toast or small logging instead of alert
+        console.warn('Missing textures:', missingTextures.join(', '));
+    }
+}
+
+function selectTexture(type, item, isAuto = false) {
+    const input = inputs[type];
+    if (input) input.value = item.name;
+
+    applyTextureToFace(type, item.name, isAuto);
+    closeList(type);
+    updateClearBtnVisibility(type);
+
+    if (allFacesSameToggle.checked && type === 'top' && !isAuto) {
+        updateAllFacesSame();
+    }
+}
+
+function applyTextureToFace(type, textureNameOrUrl, isAuto = false) {
+    const face = faces[type];
+    if (!face) return;
+
+    let url = textureNameOrUrl;
+
+    // If it's a name, find the base64 data
+    if (!textureNameOrUrl.startsWith('data:') && !textureNameOrUrl.startsWith('http')) {
+        const textureData = textures.find(t => t.name.toLowerCase() === textureNameOrUrl.toLowerCase());
+        if (textureData) {
+            url = textureData.base64;
+        } else {
+            // If not found in known textures, it might be missing
+            // We can't generate a URL if we don't have it
+            // But we can try setting a color or placebo
+            face.style.backgroundImage = 'none';
+            face.style.backgroundColor = '#ffcccc'; // Light red for error
+            return;
+        }
+    }
+
+    face.style.backgroundImage = `url('${url}')`;
+    face.style.backgroundColor = 'white'; // Reset
+    face.style.backgroundSize = 'cover';
+    face.style.imageRendering = 'pixelated'; // Keep pixel art sharp
+}
+
+function clearTexture(key) {
+    if (inputs[key]) inputs[key].value = '';
+
+    if (key === 'block') {
+        // Clear all faces
+        ['top', 'left', 'right'].forEach(face => {
+            if (faces[face]) {
+                faces[face].style.backgroundImage = 'none';
+                faces[face].style.backgroundColor = '#f0f0f0';
+            }
+            if (inputs[face]) inputs[face].value = '';
+        });
+        halfBlockToggle.checked = false;
+        updateHalfBlock();
+    } else {
+        if (faces[key]) {
+            faces[key].style.backgroundImage = 'none';
+            faces[key].style.backgroundColor = '#f0f0f0';
         }
     }
 }
 
-function selectTexture(key, texture) {
-    // 1. Update Input Value
-    inputs[key].value = texture.name;
-    const url = `url('${texture.base64}')`;
-
-    // 2. Apply Texture
-    if (allFacesSameToggle.checked && key === 'top') {
-        // Apply to ALL faces
-        applyTextureToFace('top', url);
-        applyTextureToFace('left', url);
-        applyTextureToFace('right', url);
-        // Sync values
-        inputs.left.value = texture.name;
-        inputs.right.value = texture.name;
-    } else {
-        // Apply to specific face
-        applyTextureToFace(key, url);
-    }
-
-    // 3. Close List
-    closeList(key);
-    updateClearBtnVisibility(key);
-}
-
-function applyTextureToFace(key, urlString) {
-    if (faces[key]) {
-        faces[key].style.backgroundImage = urlString;
-    }
-}
-
-function clearTexture(key) {
-    // Clear the background image
-    if (allFacesSameToggle.checked && key === 'top') {
-        // Clear all faces
-        applyTextureToFace('top', 'none');
-        applyTextureToFace('left', 'none');
-        applyTextureToFace('right', 'none');
-    } else {
-        // Clear specific face
-        applyTextureToFace(key, 'none');
-    }
-}
-
 function handleInputFocus(key) {
-    const val = inputs[key].value.toLowerCase();
-    let sourceData = key === 'block' ? Object.keys(blockMapping).map(name => ({ name })) : textures;
+    const input = inputs[key];
+    if (!input) return;
 
-    // Filter Logic for Blocks
+    // Determine data source
+    const sourceData = key === 'block' ? Object.keys(blockMapping).map(name => ({ name })) : textures;
+
+    // Filter if there's text
+    const val = input.value.toLowerCase();
+    let filtered = sourceData;
+
     if (key === 'block') {
+        // Apply toggle filters first
         const showSpecial = showSpecialToggle.checked;
         const showNoTexture = showNoTextureToggle.checked;
 
-        sourceData = sourceData.filter(item => {
+        filtered = sourceData.filter(item => {
             const name = item.name;
-            const isSpecial = name.includes('|');
+            const isSpecial = name.includes('|') || isNonFullBlock(name);
 
             // Priority: Special Check
             if (isSpecial) return showSpecial;
@@ -789,36 +950,37 @@ function handleInputFocus(key) {
 
             return true;
         });
+
+        // Then apply search filter
+        if (val) {
+            filtered = filtered.filter(item => item.name.toLowerCase().includes(val));
+        }
+    } else {
+        if (val) {
+            filtered = sourceData.filter(item => item.name.toLowerCase().includes(val));
+        }
     }
 
-    if (!val) {
-        populateList(key, sourceData);
-    } else {
-        const filtered = sourceData.filter(t => t.name.toLowerCase().includes(val));
-        populateList(key, filtered);
-    }
+    populateList(key, filtered);
     openList(key);
-    updateClearBtnVisibility(key);
 }
 
 function openList(key) {
-    if (!lists[key]) return;
-
-    // Close others
-    ['block', 'top', 'left', 'right'].forEach(k => {
-        if (k !== key && lists[k]) {
-            lists[k].classList.add('hidden');
-        }
+    Object.keys(lists).forEach(k => {
+        if (k !== key) closeList(k);
     });
-    lists[key].classList.remove('hidden');
+
+    const list = lists[key];
+    if (list) {
+        list.classList.remove('hidden');
+    }
 }
 
 function closeList(key) {
-    if (!lists[key]) return;
-    // Timeout to allow click event to register
-    setTimeout(() => {
-        lists[key].classList.add('hidden');
-    }, 150);
+    const list = lists[key];
+    if (list) {
+        list.classList.add('hidden');
+    }
 }
 
 function updateClearBtnVisibility(key) {
@@ -833,155 +995,117 @@ function updateClearBtnVisibility(key) {
     }
 }
 
-async function saveImage() {
-    const element = document.getElementById('block-root');
-    if (!element) return;
+// Checkbox Logic
+function updateSelectedCount() {
+    if (selectedCountSpan) selectedCountSpan.textContent = `${selectedBlocks.size}個選択中`;
+}
 
-    // Check if multi-select mode
-    if (multiSelectToggle && multiSelectToggle.checked && selectedBlocks.size > 0) {
-        await saveMultipleBlocks();
+// Generate ZIP
+function saveImage() {
+    if (multiSelectToggle.checked && selectedBlocks.size > 0) {
+        saveMultipleBlocks();
     } else {
-        await saveSingleBlock();
+        saveSingleBlock();
     }
 }
 
-async function saveSingleBlock() {
-    const element = document.getElementById('block-root');
-    let filename = 'bloxd-block';
-    if (inputs.block && inputs.block.value) {
-        filename = inputs.block.value
-            .replace(/[\\/:*?"<>|]/g, '_')
-            .replace(/[\x00-\x1f]/g, '')
-            .trim();
-    }
-    if (!filename) filename = 'bloxd-block';
+function saveSingleBlock() {
+    const container = document.querySelector('.BlockRoot');
 
-    const scale = 2;
+    // Ensure background is transparent
+    // html2canvas supports backgroundColor: null
 
-    try {
-        const dataUrl = await domtoimage.toPng(element, {
-            width: element.offsetWidth * scale,
-            height: element.offsetHeight * scale,
-            style: {
-                transform: `scale(${scale})`,
-                transformOrigin: 'top left',
-                width: element.offsetWidth + 'px',
-                height: element.offsetHeight + 'px',
-                margin: 0
-            }
-        });
-
-        const img = new Image();
-        img.src = dataUrl;
-        await new Promise(resolve => { img.onload = resolve; });
-
-        const canvas = document.createElement('canvas');
-        canvas.width = 300;
-        canvas.height = 300;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, 300, 300);
-
+    html2canvas(container, {
+        backgroundColor: null,
+        scale: 2 // Higher resolution
+    }).then(canvas => {
         const link = document.createElement('a');
-        link.download = `${filename}.png`;
+        link.download = 'block_texture.png';
         link.href = canvas.toDataURL('image/png');
         link.click();
-    } catch (error) {
-        console.error('Save failed:', error);
-        alert('画像の保存に失敗しました: ' + error.message);
-    }
+    });
 }
 
 async function saveMultipleBlocks() {
+    if (selectedBlocks.size === 0) return;
+
     const zip = new JSZip();
-    const element = document.getElementById('block-root');
-    const scale = 2;
+    const container = document.querySelector('.BlockRoot');
+    const folder = zip.folder("block_textures");
 
-    const blockNames = Array.from(selectedBlocks);
-    let completed = 0;
+    // Store current state to restore later
+    const originalBlock = inputs.block.value;
+    const originalHalf = halfBlockToggle.checked;
 
-    saveBtn.disabled = true;
-    saveBtn.textContent = `保存中... (0/${blockNames.length})`;
-
-    // Reset Cancel Button
+    // Reset cancel state
+    isExportCanceling = false;
     if (cancelBtn) {
         cancelBtn.classList.remove('hidden');
+        cancelBtn.textContent = 'キャンセル';
         cancelBtn.disabled = false;
-        cancelBtn.textContent = '🚫 キャンセル';
-        isExportCanceling = false;
     }
 
-    for (const blockName of blockNames) {
-        if (isExportCanceling) break;
-        try {
-            selectBlock(blockName);
-            await new Promise(resolve => setTimeout(resolve, 100));
+    let processedCount = 0;
+    const total = selectedBlocks.size;
 
-            const dataUrl = await domtoimage.toPng(element, {
-                width: element.offsetWidth * scale,
-                height: element.offsetHeight * scale,
-                style: {
-                    transform: `scale(${scale})`,
-                    transformOrigin: 'top left',
-                    width: element.offsetWidth + 'px',
-                    height: element.offsetHeight + 'px',
-                    margin: 0
-                }
+    // Configure higher scale for better quality
+    const scale = 2; // 2x resolution
+
+    // Helper to sleep
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    try {
+        for (const blockName of selectedBlocks) {
+            // Check cancellation
+            if (isExportCanceling) {
+                break;
+            }
+
+            // Select block and wait for UI update
+            selectBlock(blockName);
+            await sleep(100); // Wait for styles/images to apply
+
+            // Capture
+            const canvas = await html2canvas(container, {
+                backgroundColor: null,
+                scale: scale
             });
 
-            const img = new Image();
-            img.src = dataUrl;
-            await new Promise(resolve => { img.onload = resolve; });
-
-            const canvas = document.createElement('canvas');
-            canvas.width = 300;
-            canvas.height = 300;
-            const ctx = canvas.getContext('2d');
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, 300, 300);
-
+            // Setup file name
+            // Remove invalid characters for filenames
+            const safeName = blockName.replace(/[^a-zA-Z0-9_\- ]/g, '_').trim();
             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 
-            // Strict sanitization for Windows compatibility
-            let safeName = blockName
-                .replace(/[\\/:*?"<>|]/g, '_')
-                .replace(/[\x00-\x1f]/g, '')
-                .trim();
-            if (!safeName) safeName = `block_${completed}`;
+            folder.file(`${safeName}.png`, blob);
 
-            zip.file(`${safeName}.png`, blob);
+            processedCount++;
+            saveBtn.textContent = `生成中... (${processedCount}/${total})`;
 
-            completed++;
-            saveBtn.textContent = `保存中... (${completed}/${blockNames.length})`;
-        } catch (error) {
-            console.error(`Failed to capture ${blockName}:`, error);
+            // Small pause to keep UI responsive
+            await sleep(50);
         }
-    }
 
-    if (!isExportCanceling) {
-        try {
-            const content = await zip.generateAsync({
-                type: 'blob',
-                compression: 'DEFLATE',
-                compressionOptions: {
-                    level: 6
-                }
-            });
-            const link = document.createElement('a');
-            link.download = 'bloxd-blocks.zip';
-            link.href = URL.createObjectURL(content);
-            link.click();
-        } catch (error) {
-            console.error('ZIP generation failed:', error);
-            alert('ZIP生成に失敗しました');
+        // Finalize if not canceled
+        if (!isExportCanceling) {
+            const content = await zip.generateAsync({ type: "blob" });
+            saveAs(content, "bloxd_textures.zip");
+            alert('ダウンロードが完了しました！');
+        } else {
+            alert('エクスポートをキャンセルしました。');
         }
-    } else {
-        alert('エクスポートをキャンセルしました。');
-    }
 
-    saveBtn.disabled = false;
-    saveBtn.textContent = 'PNG保存';
-    if (cancelBtn) cancelBtn.classList.add('hidden');
+    } catch (err) {
+        console.error('Export failed:', err);
+        alert('エラーが発生しました: ' + err.message);
+    } finally {
+        // Restore
+        inputs.block.value = originalBlock;
+        if (originalBlock) selectBlock(originalBlock);
+        halfBlockToggle.checked = originalHalf;
+        updateHalfBlock();
+
+        saveBtn.textContent = '画像を保存';
+        if (cancelBtn) cancelBtn.classList.add('hidden');
+        isExportCanceling = false;
+    }
 }

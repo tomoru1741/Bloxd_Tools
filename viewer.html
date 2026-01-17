@@ -11,8 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/viewer.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="js/viewer.js" defer></script>
 </head>
 
@@ -55,8 +56,6 @@
                         <span id="selected-count" style="font-size: 0.9rem; color: var(--text-secondary);">0個選択中</span>
                     </div>
                 </div>
-                <span id="download-warning"
-                    class="hidden">Windowsをお使いの場合は、ダウンロードされたZIPファイルの解凍前に「プロパティー」→「全般」→「セキュリティ」から「許可する」にチェックを入れる必要がある場合があります。</span>
                 <div class="inputs-grid">
                     <!-- Block Search -->
                     <div class="input-group block-search-group">
