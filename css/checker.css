@@ -38,6 +38,10 @@ body {
     transition: background-color 0.3s ease;
 }
 
+body.preload {
+    transition: none !important;
+}
+
 .app-container {
     width: 100%;
     max-width: 1200px;
@@ -525,6 +529,15 @@ body.light-theme .item-row {
 .item-status.translated {
     background: rgba(16, 185, 129, 0.15);
     color: var(--accent-success);
+}
+
+.item-row.orphan {
+    border-left: 3px solid var(--accent-danger);
+}
+
+.item-status.orphan {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--accent-danger);
 }
 
 /* ===== Loading Spinner ===== */

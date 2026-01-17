@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bloxd 翻訳チェッカー</title>
+    <title>Bloxd Localization Checker | Bloxd Tools for Bloxd Japan Wiki</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,13 +17,13 @@
 <body>
     <div class="app-container">
         <header class="header">
-            <h1>🔍 Bloxd 翻訳チェッカー</h1>
+            <h1>Bloxd Localization Checker</h1>
+            <p class="subtitle">Bloxd Tools for <a href="https://bloxdjapan.miraheze.org/">Bloxd Japan Wiki</a></p>
             <p>ゲーム内アイテムとWiki翻訳の比較ツール</p>
-            <p class="subtitle">for <a href="https://bloxdjapan.miraheze.org/">Bloxd Japan Wiki</a></p>
             <div class="nav-links">
                 <a href="index.html" class="nav-link">← ホーム</a>
-                <a href="converter.html" class="nav-link">Model Converter</a>
                 <a href="viewer.html" class="nav-link">Texture Viewer</a>
+                <a href="converter.html" class="nav-link">Model Converter</a>
                 <button id="theme-toggle" class="theme-toggle" title="テーマ切り替え">🌙</button>
             </div>
         </header>
@@ -71,7 +71,6 @@
                     <div class="source-card">
                         <h3>🌐 Wiki データ</h3>
                         <p id="wikiDataStatus" class="status loading">読み込み中...</p>
-                        <button id="refreshWikiData" class="btn secondary">🔄 更新</button>
                     </div>
                 </div>
 
@@ -86,6 +85,9 @@
                         <button class="btn filter-btn active" data-filter="all">すべて</button>
                         <button class="btn filter-btn" data-filter="missing">未翻訳</button>
                         <button class="btn filter-btn" data-filter="translated">翻訳済み</button>
+                        <button class="btn filter-btn" data-filter="orphan">Wiki孤立</button>
+                        <button id="refreshWikiData" class="btn secondary"
+                            style="padding: 8px 12px; margin-left: auto;">🔄 更新</button>
                     </div>
                 </div>
             </section>
@@ -139,7 +141,7 @@
         </main>
 
         <footer class="footer">
-            <p>Bloxd Japan Wiki 翻訳支援ツール | 最終更新: <span id="lastUpdate">-</span></p>
+            <p>Made by tomoru1741</p>
         </footer>
     </div>
 
