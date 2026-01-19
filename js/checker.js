@@ -169,42 +169,19 @@ async function fetchLatestGameItems() {
 
             let foundInFile = false;
 
-            // Strategy 1: Anchor Search (Object format: Unloaded:0)
-            const anchorResult = scanStartingFromAnchor(jsText);
-            if (anchorResult && anchorResult.length > 20) {
-                console.log(`Found ${anchorResult.length} items in chunk ${id} (Anchor)`);
-                allItems = allItems.concat(anchorResult);
+            let chunkItems = null;
+
+            if (id === '3') {
+                chunkItems = scanForBlockDefinitions(jsText);
+                console.log(`Chunk 3 (Blocks): Found ${chunkItems ? chunkItems.length : 0} blocks via scanForBlockDefinitions`);
+            } else if (id === '32') {
+                chunkItems = scanForItemDefinitions(jsText);
+                console.log(`Chunk 32 (Items): Found ${chunkItems ? chunkItems.length : 0} items via scanForItemDefinitions`);
+            }
+
+            if (chunkItems && chunkItems.length > 0) {
+                allItems = allItems.concat(chunkItems);
                 foundInFile = true;
-            }
-
-            // Strategy 2: Large String Array Search
-            if (!foundInFile) {
-                const arrayResult = scanForLargeStringArray(jsText);
-                if (arrayResult && arrayResult.length > 20) {
-                    console.log(`Found ${arrayResult.length} items in chunk ${id} (Large String Array)`);
-                    allItems = allItems.concat(arrayResult);
-                    foundInFile = true;
-                }
-            }
-
-            // Strategy 3: Heuristic Search
-            if (!foundInFile) {
-                const heuristicResult = scanForSequentialEnums(jsText);
-                if (heuristicResult && heuristicResult.length > 20) {
-                    console.log(`Found ${heuristicResult.length} items in chunk ${id} (Heuristic)`)
-                    allItems = allItems.concat(heuristicResult);
-                    foundInFile = true;
-                }
-            }
-
-            // Strategy 4: textureInfo extraction (same as viewer.js)
-            if (!foundInFile) {
-                const textureInfoResult = scanForTextureInfoBlocks(jsText);
-                if (textureInfoResult && textureInfoResult.length > 20) {
-                    console.log(`Found ${textureInfoResult.length} blocks in chunk ${id} (textureInfo)`);
-                    allItems = allItems.concat(textureInfoResult);
-                    foundInFile = true;
-                }
             }
 
         } catch (e) {
@@ -222,48 +199,109 @@ async function fetchLatestGameItems() {
 
     throw new Error("Item list not found in target chunks (32, 3).");
 }
-
-// Strategy 4: textureInfo extraction (viewer.js approach)
-function scanForTextureInfoBlocks(text) {
+// Strategy 4: Sequential Block Extraction
+// Scans the file from top to bottom to preserve order and handle dynamic blocks
+function scanForBlockDefinitions(text) {
     const blockNames = [];
-    const textureInfoRegex = /textureInfo:(\[[^\]]*\]|\"[^\"]+\"|[a-zA-Z0-9_$]+(?:\.[a-zA-Z0-9_$]+)?)/g;
+    const seenNames = new Set();
+
+    // Standard colors used in dynamic property generation
+    const standardColors = ["White", "Orange", "Magenta", "Light Blue", "Yellow", "Lime", "Pink", "Gray", "Light Gray", "Cyan", "Purple", "Blue", "Brown", "Green", "Red", "Black"];
+
+    // Regex to find potential block definitions
+    // Matches:
+    // 1. Unquoted keys:  Start of line or comma, then Key:{...properties...}
+    // 2. Quoted keys:    "Key":{...properties...}
+    // 3. Wrappers:       Zv("Key", ...
+    // 4. Dynamic slabs:  qv("".concat(cv," Concrete Slab")
+
+    // Properties to confirm it's a block
+    const validProps = 'ttb:|displayName:|textureInfo:|harvestType:|itemTexture:|model:';
+
+    // Global regex for sequential scanning
+    // Group 1: Unquoted key
+    // Group 2: Quoted key
+    // Group 3: Wrapper key
+    // Group 4: Dynamic Concrete Slab pattern (Legacy/Specific)
+    // Group 5: Generic xv/Arrow dynamic pattern: xv( (vv=> "Prefix".concat(vv, "Suffix") ) )
+    //   Group 6: Prefix Quoted String
+    //   Group 7: Prefix Content
+    //   Group 8: Suffix Content
+    // Group 8: IIFE Block pattern: }("Name", {
+    const scanner = /(?:[,{]\s*([a-zA-Z0-9_]+)\s*:\s*\{(?=[^}]*(?:ttb:|displayName:|textureInfo:|harvestType:|itemTexture:|model:)))|(?:"([^"]+)"\s*:\s*\{(?=[^}]*(?:ttb:|displayName:|textureInfo:|harvestType:|itemTexture:|model:)))|(?:(?:Zv|lv|qv|sv|xv|Jv)\s*\(\s*"([^"]+)"\s*,)|(?:qv\(\s*""\.concat\(cv,\s*" (Concrete Slab)"\))|(?:xv\(\s*\(\w+=>("([^"]*)"|""?)\.concat\(\w+(?:,\s*"([^"]*)")?\)\))|(?:\}\s*\(\s*"([^"]+)"\s*,\s*\{)/g;
+
     let match;
+    while ((match = scanner.exec(text)) !== null) {
+        let name = match[1] || match[2] || match[3] || match[8];
+        const specificDynamic = match[4]; // Concrete Slab
+        const genericDynamic = match[5];  // xv arrow pattern
 
-    while ((match = textureInfoRegex.exec(text)) !== null) {
-        const infoPos = match.index;
+        if (specificDynamic) {
+            // Specific dynamic block generation (Concrete Slab)
+            const suffix = specificDynamic;
+            for (const color of standardColors) {
+                const fullName = `${color} ${suffix}`;
+                if (!seenNames.has(fullName)) {
+                    seenNames.add(fullName);
+                    blockNames.push(fullName);
+                }
+            }
+        } else if (genericDynamic) {
+            // Generic dynamic block generation (Chalk, Spawn Block, etc.)
+            // match[6] is prefix content (inside quotes), match[7] is suffix content
+            const prefix = match[6] || "";
+            const suffix = match[7] || "";
 
-        // Lookback for block name
-        const scanLimit = 1500;
-        const startScan = Math.max(0, infoPos - scanLimit);
-        const lookbackText = text.substring(startScan, infoPos);
+            for (const color of standardColors) {
+                // Name construction: Prefix + Color + Suffix
+                const fullName = `${prefix}${color}${suffix}`;
 
-        const candidates = [];
-        const wrapperRegex = /(?:[a-zA-Z0-9_$]{1,3})\(\s*\"([^\"]+)\"\s*,/g;
-        let wMatch;
-        while ((wMatch = wrapperRegex.exec(lookbackText)) !== null) {
-            candidates.push({ name: wMatch[1], pos: wMatch.index });
-        }
+                if (!seenNames.has(fullName)) {
+                    seenNames.add(fullName);
+                    blockNames.push(fullName);
+                }
+            }
+        } else if (name) {
+            // Standard block definition
+            if (isValidBlockName(name, seenNames)) {
+                seenNames.add(name);
+                blockNames.push(name);
 
-        const objRegex = /(?:\"([^\"]+)\"|([a-zA-Z0-9_$]+))\s*:\s*\{/g;
-        let oMatch;
-        while ((oMatch = objRegex.exec(lookbackText)) !== null) {
-            candidates.push({ name: oMatch[1] || oMatch[2], pos: oMatch.index });
-        }
-
-        if (candidates.length > 0) {
-            candidates.sort((a, b) => b.pos - a.pos);
-            const keywords = ['displayName', 'translationKey', 'ttb', 'textureInfo', 'harvestType', 'soundType', 'description', 'specialToolDrop', 'onMinedAura', 'specialToolBonusDrops', 'soundGroup'];
-
-            for (const cand of candidates) {
-                if (!keywords.includes(cand.name) && !blockNames.includes(cand.name)) {
-                    blockNames.push(cand.name);
-                    break;
+                // Special handling for Bookshelf which generates "Empty Bookshelf" dynamically
+                if (name === "Bookshelf" && !seenNames.has("Empty Bookshelf")) {
+                    seenNames.add("Empty Bookshelf");
+                    blockNames.push("Empty Bookshelf");
                 }
             }
         }
     }
 
+    // Special case: Concrete logic sometimes uses loops for other blocks too
+    // Let's also check for "Stained Clay" or "Wool" if they are dynamic
+    // But currently only Concrete Slab was confirmed as dynamic in our analysis.
+
+    console.log(`scanForBlockDefinitions found ${blockNames.length} blocks`);
     return blockNames.length > 0 ? blockNames : null;
+}
+
+// Helper: Check if a name is a valid block name
+function isValidBlockName(name, seenNames) {
+    // Keywords to filter out (internal property names, not block names)
+    const keywords = new Set(['displayName', 'translationKey', 'ttb', 'textureInfo', 'harvestType',
+        'soundType', 'description', 'specialToolDrop', 'onMinedAura', 'specialToolBonusDrops',
+        'soundGroup', 'itemTexture', 'model', 'rootMetaDesc', 'blockModel', 'drops', 'xF',
+        'heldItemScale', 'modelScale', 'meta', 'particlesIgnoreBlack', 'harvestLevel', 'GD',
+        'damage', 'stoodOnSpeedMultiplier', 'altActionable', 'unlitStandaloneMesh', 'customPlanesInfo',
+        'customModelInfo', 'absorbThrowable', 'CrosshairText', 'transTex', 'texturePerSide',
+        'free', 'placeholder', 'placeholder2', 'temp', 'UNUSED', 'prototype', 'constructor']);
+
+    if (!name || name.length < 2) return false;
+    if (keywords.has(name)) return false;
+    if (seenNames.has(name)) return false;
+    if (name.includes('|') || name.includes('_')) return false;
+    if (name.startsWith('Reserved')) return false; // Reserved placeholders
+    if (/^free_?placeholder/i.test(name)) return false;
+    return true;
 }
 
 function scanStartingFromAnchor(text) {
@@ -737,6 +775,121 @@ function exportTemplateAsJSON() {
     a.download = `bloxd_missing_translations_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
+}
+
+
+// Strategy 5: Sequential Item Extraction (for chunk32.js)
+// Handles:
+// 1. Wrapper: Vv("Wood Bow", {...}) or IIFE style }}("Compass", {...})
+// 2. Quoted Key: "AK-47":{...}
+// 3. Unquoted Key: Stick:{...}
+// 4. Dynamic: (vv=>"".concat(vv," Balloon"))
+function scanForItemDefinitions(text) {
+    const itemNames = [];
+    const seenNames = new Set();
+    const standardColors = ["White", "Orange", "Magenta", "Light Blue", "Yellow", "Lime", "Pink", "Gray", "Light Gray", "Cyan", "Purple", "Blue", "Brown", "Green", "Red", "Black"];
+    const mobNames = ["Pig", "Cow", "Sheep", "Horse", "Cave Golem", "Draugr Zombie", "Draugr Skeleton", "Forst Golem", "Forst Zombie", "Forst Skeleton", "Doraugr Knight", "Wolf", "Bear", "Deer", "Stag", "Gold Watermelon Stag", "Gorilla", "Wildcat", "Draugr Huntress", "Magma Golem", "Spirit Golem", "Spirit Wolf", "Spirit Bear", "Spirit Stag", "Spirit Gorilla", "Draugr Warper"];
+    // Mob名の調整からスタートする
+
+
+    // Regex Explanation:
+    // Group 1: Wrapper Name -> Vv("Name", { ... OR ("Name", { ...
+    //   Matches: ( word OR ) OR } ) ( "Name" , {
+    // Group 2: Quoted Key -> "Name": { ...
+    // Group 3: Unquoted Key -> Name: { ...
+    // Group 4: Dynamic Prefix Content
+    // Group 5: Dynamic Suffix Content
+
+    const scanner = /(?:(?:\w+|\)|\})\s*\(\s*"([^"]+)"\s*,\s*\{(?=[^}]*(?:translationKey|type:|textureName:|textureInfo:|weight:|heldItemScale:)))|(?:"([^"]+)"\s*:\s*\{(?=[^}]*(?:translationKey|type:|textureName:|textureInfo:|weight:|heldItemScale:)))|(?:([a-zA-Z0-9]+)\s*:\s*\{(?=[^}]*(?:translationKey|type:|textureName:|textureInfo:|weight:|heldItemScale:)))|(?:\(\s*\w+\s*=>\s*(?:"([^"]*)"|""?)\s*\.concat\(\s*\w+(?:\s*,\s*"([^"]*)"?)?\s*\))/g;
+
+    let match;
+    while ((match = scanner.exec(text)) !== null) {
+        const wrapperName = match[1];
+        const quotedKey = match[2];
+        const unquotedKey = match[3];
+
+        const name = wrapperName || quotedKey || unquotedKey;
+
+        if (name) {
+            // STOP CONDITION: SKIP noise keys like Wolf, but CONTINUE scanning for later items like Spawn Orbs.
+            if (name === "Wolf") continue;
+
+            // Static definition
+            if (isValidItemName(name, seenNames)) {
+                seenNames.add(name);
+                itemNames.push(name);
+
+                // Cranberries Bowl logic
+                if (name === "Bowl of Cranberries" && !seenNames.has("Full Bowl of Cranberries")) {
+                    const variants = [
+                        "Partially Full Bowl of Cranberries",
+                        "Half Full Bowl of Cranberries",
+                        "Nearly Full Bowl of Cranberries",
+                        "Full Bowl of Cranberries"
+                    ];
+                    for (const v of variants) {
+                        if (!seenNames.has(v)) {
+                            seenNames.add(v);
+                            itemNames.push(v);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Dynamic item definition (Balloon logic)
+            // Group 4: Prefix, Group 5: Suffix
+            const prefix = match[4] || "";
+            const suffix = (match[5] || "").trim();
+
+            if (suffix.includes("Spawn Orb")) {
+                for (const mob of mobNames) {
+                    const fullName = `${mob} Spawn Orb`;
+                    if (!seenNames.has(fullName)) {
+                        seenNames.add(fullName);
+                        itemNames.push(fullName);
+                    }
+                }
+            } else if (suffix) {
+                // Default Color Logic (Balloons, beds, etc.)
+                for (const color of standardColors) {
+                    const fullName = `${prefix}${color} ${suffix}`.replace(/\s+/g, ' ').trim();
+
+                    if (!seenNames.has(fullName)) {
+                        seenNames.add(fullName);
+                        itemNames.push(fullName);
+                    }
+                }
+            }
+        }
+    }
+
+    console.log(`scanForItemDefinitions found ${itemNames.length} items`);
+    return itemNames;
+}
+
+function isValidItemName(name, seenNames) {
+    if (!name || name.length < 2) return false;
+    if (seenNames.has(name)) return false;
+
+    // Global Noise Filters
+    if (name.includes('|')) return false;
+    if (name.includes('_')) return false; // Reject items with underscore
+    if (/^[a-z]/.test(name)) return false; // Reject lowercase start
+    if (name.includes(':') || /^[0-9]+[eE][0-9]+$/.test(name) || /^[0-9]+$/.test(name)) return false;
+    if (/^[0-9]+[eE][0-9]+$/.test(name)) return false; // Reject scientific notation noise (1e8)
+    if (/^[0-9]+$/.test(name)) return false; // Reject pure numbers
+
+    // Filter internal properties/keywords
+    const keywords = new Set(['displayName', 'translationKey', 'type', 'textureInfo', 'weight', 'heldItemScale', 'description', 'rootMetaDesc', 'textureName', 'stackable', 'secondaryDamage', 'holdAsAiming', 'requiresArrow', 'chargeStages', 'chargeTime', 'damage', 'critChance', 'critDamage', 'projectileSpeed', 'projectileGravity', 'projectileDamage', 'projectileKnockback']);
+    if (keywords.has(name)) return false;
+
+    // Filter Translation Keys (start with item: or block:)
+    if (name.startsWith('item:') || name.startsWith('block:')) return false;
+
+    // Filter file paths or URLs
+    if (name.includes('/') || name.includes('.png') || name.includes('.json')) return false;
+
+    return true;
 }
 
 // ===== Event Handlers =====
